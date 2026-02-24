@@ -12,27 +12,28 @@ class DataFeed:
         self.lookback_days = lookback_days
 
     def get_data(self):
-        end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=self.lookback_days)
+
+        end = datetime.utcnow()
+        start = end - timedelta(days=self.lookback_days)
 
         df = yf.download(
             self.symbol,
-            start=start_date,
-            end=end_date,
+            start=start,
+            end=end,
             interval=self.interval,
             progress=False,
             auto_adjust=True
         )
 
-        if df.empty:
-            raise ValueError("No market data returned")
+        if df is None or df.empty:
+            print("No data downloaded")
+            return pd.DataFrame()
 
-        # 🔥 FIX IMPORTANTE: asegurar arrays 1D
-        df["Close"] = np.array(df["Close"]).flatten()
-        df["Open"] = np.array(df["Open"]).flatten()
-        df["High"] = np.array(df["High"]).flatten()
-        df["Low"] = np.array(df["Low"]).flatten()
-        df["Volume"] = np.array(df["Volume"]).flatten()
+        # 🔥 FIX CRÍTICO
+        for col in ["Open","High","Low","Close","Volume"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+                df[col] = df[col].astype(float)
 
         df = df.dropna()
 
