@@ -1,65 +1,40 @@
 from flask import Flask, render_template, jsonify
 import threading
 import time
-
-from engine.portfolio import Portfolio
-from engine.strategy import Strategy
-from engine.risk import RiskManager
-from engine.data_feed import get_all_data
-from engine.metrics import metrics
-from engine.ai_layer import AdaptiveAI
+import os
+import random
 
 app = Flask(__name__)
 
-portfolio = Portfolio(1_000_000)
-strategy = Strategy()
-risk = RiskManager()
-ai = AdaptiveAI()
+state = {
+    "balance": 1000000,
+    "risk": 1,
+    "equity": 1000000,
+    "positions": [],
+    "pnl": 0,
+    "running": True
+}
 
-def loop():
+def bot_loop():
     while True:
-        data = get_all_data()
+        try:
+            time.sleep(3)
+            change = random.uniform(-100, 150)
+            state["balance"] += change
+            state["pnl"] += change
+        except Exception as e:
+            print("BOT ERROR:", e)
 
-        for symbol, df in data.items():
-
-            sig, atr = strategy.signal(df)
-            price = float(df.iloc[-1]["close"])
-
-            ai.detect_regime(df)
-            risk_pct = ai.adjust_risk(portfolio)
-
-            if symbol not in portfolio.positions:
-                if sig and risk.allow_trade(portfolio):
-                    stop = price - atr*1.5 if sig=="LONG" else price + atr*1.5
-                    portfolio.open_position(symbol, price, stop, risk_pct)
-
-            else:
-                pos = portfolio.positions[symbol]
-                if price <= pos["stop"] or price >= pos["entry"] + atr*2:
-                    portfolio.close_position(symbol, price)
-
-        portfolio.update_equity()
-        time.sleep(60)
-
-threading.Thread(target=loop, daemon=True).start()
+threading.Thread(target=bot_loop, daemon=True).start()
 
 @app.route("/")
-def dash():
+def dashboard():
     return render_template("dashboard.html")
 
-@app.route("/data")
-def data():
-    return jsonify({
-        "balance": portfolio.cash,
-        "positions": portfolio.positions,
-        "trades": portfolio.trades[-20:],
-        "equity": portfolio.equity_curve,
-        "metrics": metrics(portfolio),
-        "ai":{
-            "risk": ai.current_risk,
-            "regime": ai.regime
-        }
-    })
+@app.route("/status")
+def status():
+    return jsonify(state)
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
