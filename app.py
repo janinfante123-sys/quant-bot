@@ -1,40 +1,41 @@
 from flask import Flask, render_template, jsonify
 import threading
 import time
-import os
-import random
 
 app = Flask(__name__)
 
-state = {
+# Estado global del bot
+bot_data = {
     "balance": 1000000,
-    "risk": 1,
-    "equity": 1000000,
+    "risk": 0.01,
     "positions": [],
-    "pnl": 0,
-    "running": True
+    "equity_curve": []
 }
 
-def bot_loop():
+# -------------------------
+# BOT SIMULADO (paper trading)
+# -------------------------
+def run_bot():
     while True:
-        try:
-            time.sleep(3)
-            change = random.uniform(-100, 150)
-            state["balance"] += change
-            state["pnl"] += change
-        except Exception as e:
-            print("BOT ERROR:", e)
+        # simulación simple para comprobar que funciona
+        bot_data["balance"] += 1
+        bot_data["equity_curve"].append(bot_data["balance"])
+        time.sleep(5)
 
-threading.Thread(target=bot_loop, daemon=True).start()
+# Iniciar bot en segundo plano
+threading.Thread(target=run_bot, daemon=True).start()
 
+# -------------------------
+# WEB
+# -------------------------
 @app.route("/")
 def dashboard():
     return render_template("dashboard.html")
 
 @app.route("/status")
 def status():
-    return jsonify(state)
+    return jsonify(bot_data)
 
+# IMPORTANTE PARA RENDER
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
