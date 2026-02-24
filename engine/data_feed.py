@@ -1,40 +1,34 @@
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from flask import Flask, render_template, jsonify
+import threading
+import time
+import os
 
+app = Flask(__name__)
 
-class DataFeed:
+# estado fake mientras probamos
+state = {
+    "balance": 1000000,
+    "risk": 1,
+    "positions": [],
+    "running": True
+}
 
-    def __init__(self, symbol="BTC-USD", interval="1h", lookback_days=30):
-        self.symbol = symbol
-        self.interval = interval
-        self.lookback_days = lookback_days
+def bot_loop():
+    while True:
+        time.sleep(5)
+        # simulación simple
+        state["balance"] += 1
 
-    def get_data(self):
+threading.Thread(target=bot_loop, daemon=True).start()
 
-        end = datetime.utcnow()
-        start = end - timedelta(days=self.lookback_days)
+@app.route("/")
+def dashboard():
+    return render_template("dashboard.html")
 
-        df = yf.download(
-            self.symbol,
-            start=start,
-            end=end,
-            interval=self.interval,
-            progress=False,
-            auto_adjust=True
-        )
+@app.route("/status")
+def status():
+    return jsonify(state)
 
-        if df is None or df.empty:
-            print("No data downloaded")
-            return pd.DataFrame()
-
-        # 🔥 FIX CRÍTICO
-        for col in ["Open","High","Low","Close","Volume"]:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-                df[col] = df[col].astype(float)
-
-        df = df.dropna()
-
-        return df
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
