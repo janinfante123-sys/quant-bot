@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Quant System</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{background:#0e1117;color:white;font-family:Arial}
+.card{background:#111827;padding:20px;margin:10px;border-radius:10px}
+</style>
+</head>
+<body>
+
+<h1>Quant Trading Dashboard</h1>
+
+<div class="card">
+Balance: <span id="balance"></span><br>
+Risk: <span id="risk"></span><br>
+Regime: <span id="regime"></span>
+</div>
+
+<canvas id="chart"></canvas>
+
+<script>
+let ctx=document.getElementById("chart").getContext("2d");
+let chart=new Chart(ctx,{
+type:"line",
+data:{labels:[],datasets:[{data:[],borderColor:"lime"}]}
+});
+
+async function update(){
+let r=await fetch("/data");
+let d=await r.json();
+
+document.getElementById("balance").innerText=d.balance;
+document.getElementById("risk").innerText=(d.ai.risk*100).toFixed(2)+"%";
+document.getElementById("regime").innerText=d.ai.regime;
+
+chart.data.labels=d.equity.map((_,i)=>i);
+chart.data.datasets[0].data=d.equity;
+chart.update();
+}
+setInterval(update,2000);
+</script>
+
+</body>
+</html>
