@@ -1,31 +1,39 @@
 import yfinance as yf
-import requests
 import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
 
-def get_crypto(symbol):
-    r = requests.get(f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=1h&limit=300")
-    data = r.json()
 
-    df = pd.DataFrame(data, columns=[
-        "time","open","high","low","close","vol","a","b","c","d","e","f"
-    ])
+class DataFeed:
 
-    df["close"] = df["close"].astype(float)
-    df["high"] = df["high"].astype(float)
-    df["low"] = df["low"].astype(float)
+    def __init__(self, symbol="BTC-USD", interval="1h", lookback_days=30):
+        self.symbol = symbol
+        self.interval = interval
+        self.lookback_days = lookback_days
 
-    return df
+    def get_data(self):
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=self.lookback_days)
 
-def get_stock(symbol):
-    df = yf.download(symbol, interval="1h", period="60d")
-    df = df.rename(columns={"Close":"close","High":"high","Low":"low"})
-    return df
+        df = yf.download(
+            self.symbol,
+            start=start_date,
+            end=end_date,
+            interval=self.interval,
+            progress=False,
+            auto_adjust=True
+        )
 
-def get_all_data():
-    return {
-        "BTCUSDT": get_crypto("BTCUSDT"),
-        "ETHUSDT": get_crypto("ETHUSDT"),
-        "AAPL": get_stock("AAPL"),
-        "MSFT": get_stock("MSFT"),
-        "SPY": get_stock("SPY"),
-    }
+        if df.empty:
+            raise ValueError("No market data returned")
+
+        # 🔥 FIX IMPORTANTE: asegurar arrays 1D
+        df["Close"] = np.array(df["Close"]).flatten()
+        df["Open"] = np.array(df["Open"]).flatten()
+        df["High"] = np.array(df["High"]).flatten()
+        df["Low"] = np.array(df["Low"]).flatten()
+        df["Volume"] = np.array(df["Volume"]).flatten()
+
+        df = df.dropna()
+
+        return df
