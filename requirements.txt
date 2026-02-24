@@ -1,0 +1,7 @@
+flask
+pandas
+numpy
+ta
+requests
+yfinance
+gunicorn
