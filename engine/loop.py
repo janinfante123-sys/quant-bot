@@ -21,17 +21,20 @@ def get_price(market,symbol):
     return df, df['close'].iloc[-1]
 
 def run(state):
+    print("🟢 BOT LOOP STARTED")
+
     while True:
+        print("🔁 NEW CYCLE")
+
         price_map={}
         for market,symbol in SYMBOLS:
+            print(f"Checking {symbol}")
+
             df,price=get_price(market,symbol)
             price_map[symbol]=price
 
             if not ai_module.trained:
                 ai_module.train(df)
-
-            if len(state.open_positions)>=MAX_OPEN_TRADES:
-                continue
 
             signal=strategy.generate_signal(df)
             if signal!="HOLD" and ai_module.filter_signal(df):
@@ -43,4 +46,6 @@ def run(state):
 
         executor.check_closures(state,price_map)
         metrics.update(state)
+
+        print("⏳ sleeping...")
         time.sleep(LOOP_INTERVAL)
