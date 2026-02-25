@@ -24,28 +24,33 @@ def run(state):
     print("🟢 BOT LOOP STARTED")
 
     while True:
-        print("🔁 NEW CYCLE")
+        try:
+            print("🔁 NEW CYCLE")
 
-        price_map={}
-        for market,symbol in SYMBOLS:
-            print(f"Checking {symbol}")
+            price_map={}
+            for market,symbol in SYMBOLS:
+                print(f"Checking {symbol}")
 
-            df,price=get_price(market,symbol)
-            price_map[symbol]=price
+                df,price=get_price(market,symbol)
+                price_map[symbol]=price
 
-            if not ai_module.trained:
-                ai_module.train(df)
+                if not ai_module.trained:
+                    ai_module.train(df)
 
-            signal=strategy.generate_signal(df)
-            if signal!="HOLD" and ai_module.filter_signal(df):
-                entry=price
-                sl,tp=risk.dynamic_sl_tp(entry,signal)
-                size=risk.position_size(state.balance,entry,sl)
-                if size>0:
-                    executor.execute(state,symbol,signal,entry,sl,tp,size)
+                signal=strategy.generate_signal(df)
+                if signal!="HOLD" and ai_module.filter_signal(df):
+                    entry=price
+                    sl,tp=risk.dynamic_sl_tp(entry,signal)
+                    size=risk.position_size(state.balance,entry,sl)
+                    if size>0:
+                        executor.execute(state,symbol,signal,entry,sl,tp,size)
 
-        executor.check_closures(state,price_map)
-        metrics.update(state)
+            executor.check_closures(state,price_map)
+            metrics.update(state)
 
-        print("⏳ sleeping...")
-        time.sleep(LOOP_INTERVAL)
+            print("⏳ sleeping...")
+            time.sleep(LOOP_INTERVAL)
+
+        except Exception as e:
+            print("❌ LOOP ERROR:", e)
+            time.sleep(5)
