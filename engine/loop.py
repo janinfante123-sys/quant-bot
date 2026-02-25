@@ -34,9 +34,6 @@ def run(state):
                 df,price=get_price(market,symbol)
                 price_map[symbol]=price
 
-                if not ai_module.trained:
-                    ai_module.train(df)
-
                 signal=strategy.generate_signal(df)
                 if signal!="HOLD" and ai_module.filter_signal(df):
                     entry=price
