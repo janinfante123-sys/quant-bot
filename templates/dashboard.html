@@ -1,0 +1,12 @@
+
+<h1>Quant Bot</h1>
+<p>Balance: {{state.balance}}</p>
+<p>Equity: {{state.equity}}</p>
+<p>Drawdown: {{state.drawdown}}</p>
+
+<h2>Open positions</h2>
+<ul>
+{% for p in state.open_positions %}
+<li>{{p.symbol}} {{p.direction}} entry {{p.entry}}</li>
+{% endfor %}
+</ul>
