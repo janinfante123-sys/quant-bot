@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from config import SYMBOLS, LOOP_INTERVAL
 from engine.data_feed import get_price
 
@@ -6,14 +7,20 @@ def run(state):
     print("🟢 BOT LOOP STARTED", flush=True)
 
     while True:
+        start = time.time()
+
         try:
-            print("🔁 NEW CYCLE", flush=True)
+            now = datetime.utcnow().strftime("%H:%M:%S")
+            print(f"\n🔁 NEW CYCLE {now}", flush=True)
 
             for market, symbol in SYMBOLS:
-                print(f"Checking {symbol}", flush=True)
                 df, price = get_price(market, symbol)
+                print(f"{symbol} → {round(price,2)}", flush=True)
 
-            print("⏳ sleeping...", flush=True)
+            duration = round(time.time() - start, 2)
+            print(f"⏱ cycle duration: {duration}s", flush=True)
+            print("⏳ sleeping...\n", flush=True)
+
             time.sleep(LOOP_INTERVAL)
 
         except Exception as e:
