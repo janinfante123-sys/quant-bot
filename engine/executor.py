@@ -10,6 +10,7 @@ def open_trade(state, symbol, side, entry, sl, tp, size):
 
     state.open_trades.append(trade)
     print(f"OPEN {side} {symbol} @ {entry}", flush=True)
+    state.save()
 
 def check_closures(state, price_map):
     closed = []
@@ -35,3 +36,6 @@ def check_closures(state, price_map):
         state.open_trades.remove(t)
         state.trades.append(t)
         print(f"CLOSE {t['symbol']}", flush=True)
+
+    if closed:
+        state.save()

@@ -48,6 +48,7 @@ def run(state):
             print(f"⏱ {duration}s", flush=True)
             print("⏳ sleeping...\n", flush=True)
 
+            state.save()
             time.sleep(LOOP_INTERVAL)
 
         except Exception as e:
