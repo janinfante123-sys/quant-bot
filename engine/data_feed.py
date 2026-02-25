@@ -1,41 +1,37 @@
-from flask import Flask, render_template, jsonify
-import threading
-import time
-import os
+import yfinance as yf
 
-app = Flask(__name__)
-
-# Estado del bot (paper trading)
-state = {
-    "balance": 1000000,
-    "risk": 1,
-    "positions": [],
-    "running": True,
-    "pnl": 0
+SYMBOLS = {
+    "crypto": ["BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD"],
+    "forex": ["EURUSD=X", "GBPUSD=X", "USDJPY=X"],
+    "stocks": ["AAPL", "MSFT", "NVDA", "SPY"],
 }
 
-# ---------------- BOT LOOP ----------------
-def bot_loop():
-    while True:
-        time.sleep(5)
+ALL_SYMBOLS = sum(SYMBOLS.values(), [])
 
-        # simulación básica
-        state["balance"] += 10
-        state["pnl"] += 10
+def get_latest_candle(symbol: str):
+    try:
+        df = yf.download(
+            symbol,
+            period="1d",
+            interval="1m",
+            progress=False,
+            auto_adjust=False,
+        )
 
-# lanzar hilo del bot
-threading.Thread(target=bot_loop, daemon=True).start()
+        if df.empty:
+            return None
 
-# ---------------- WEB ----------------
-@app.route("/")
-def dashboard():
-    return render_template("dashboard.html")
+        last = df.iloc[-1]
 
-@app.route("/status")
-def status():
-    return jsonify(state)
+        return {
+            "time": str(df.index[-1]),
+            "open": float(last["Open"]),
+            "high": float(last["High"]),
+            "low": float(last["Low"]),
+            "close": float(last["Close"]),
+            "volume": float(last["Volume"]),
+        }
 
-# ---------------- RUN ----------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    except Exception as e:
+        print(f"Data error {symbol}: {e}")
+        return None
