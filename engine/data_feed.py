@@ -1,21 +1,19 @@
-
-import ccxt
 import yfinance as yf
 import pandas as pd
 
-exchange = ccxt.binance()
+def get_price(market, symbol):
+    if market == "crypto":
+        ticker = yf.Ticker(symbol.replace("/", "-"))
+    elif market == "stock":
+        ticker = yf.Ticker(symbol)
+    else:
+        ticker = yf.Ticker(symbol)
 
-def get_crypto(symbol):
-    ohlc = exchange.fetch_ohlcv(symbol, timeframe='1h', limit=200)
-    df = pd.DataFrame(ohlc, columns=['timestamp','open','high','low','close','volume'])
-    return df
+    df = ticker.history(period="1d", interval="1h")
 
-def get_stock(symbol):
-    df = yf.download(symbol, interval="1h", period="1mo")
-    df = df.rename(columns=str.lower)
-    return df
+    if df.empty:
+        raise Exception("No data received")
 
-def get_forex(symbol):
-    df = yf.download(symbol+"=X", interval="1h", period="1mo")
-    df = df.rename(columns=str.lower)
-    return df
+    price = df["Close"].iloc[-1]
+
+    return df, price
