@@ -5,7 +5,7 @@ MAX_OPEN_TRADES = 2
 LOOP_INTERVAL = 300
 
 SYMBOLS = [
-    ("crypto", "BTC/USDT"),
-    ("crypto", "ETH/USDT"),
+    ("crypto", "BTC-USD"),
+    ("crypto", "ETH-USD"),
     ("stock", "AAPL"),
 ]
