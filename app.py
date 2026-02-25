@@ -2,20 +2,18 @@ from flask import Flask, render_template
 from engine.state import BotState
 from engine.loop import run
 import threading
-import os
 
 app = Flask(__name__)
 state = BotState()
 
-# 🔴 IMPORTANTE: arrancar el bot también en producción (gunicorn)
-def start_bot_once():
+# 🔴 Arrancar bot cuando Gunicorn worker esté listo
+@app.before_first_request
+def start_bot():
     if not hasattr(app, "bot_started"):
         app.bot_started = True
-        t = threading.Thread(target=run, args=(state,), daemon=True)
-        t.start()
+        thread = threading.Thread(target=run, args=(state,), daemon=True)
+        thread.start()
         print("🚀 BOT THREAD STARTED")
-
-start_bot_once()
 
 @app.route("/")
 def dashboard():
