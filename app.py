@@ -6,14 +6,15 @@ import threading
 app = Flask(__name__)
 state = BotState()
 
-# 🔴 Arrancar bot cuando Gunicorn worker esté listo
-@app.before_first_request
+# 🔴 ARRANCAR BOT EN PRODUCCIÓN (gunicorn)
 def start_bot():
     if not hasattr(app, "bot_started"):
         app.bot_started = True
-        thread = threading.Thread(target=run, args=(state,), daemon=True)
-        thread.start()
+        t = threading.Thread(target=run, args=(state,), daemon=True)
+        t.start()
         print("🚀 BOT THREAD STARTED")
+
+start_bot()
 
 @app.route("/")
 def dashboard():
