@@ -1,3 +1,7 @@
 from engine.loop import run
+from engine.state import BotState
 
-run()
+print("🚀 WORKER STARTED")
+
+state = BotState()
+run(state)
