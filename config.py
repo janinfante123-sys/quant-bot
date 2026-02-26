@@ -1,11 +1,25 @@
-START_BALANCE = 1000
-RISK_PER_TRADE = 0.01
-MAX_OPEN_TRADES = 3
+# ==============================
+# CONFIG
+# ==============================
 
-LOOP_INTERVAL = 60
-
+# Mercados activos
 SYMBOLS = [
-    ("crypto","BTC-USD"),
-    ("crypto","ETH-USD"),
-    ("crypto","SOL-USD"),
+    "BTC-USD",
+    "ETH-USD",
+    "SOL-USD",
+    "AAPL"
 ]
+
+# Intervalo del loop (segundos)
+# 900 = 15 minutos
+LOOP_INTERVAL = 900
+
+# Capital inicial paper trading
+START_BALANCE = 1000
+
+# Timeframe datos
+DATA_INTERVAL = "1h"
+DATA_LOOKBACK = "7d"
+
+# Tamaño por trade (porcentaje del balance)
+RISK_PER_TRADE = 0.1   # 10%
