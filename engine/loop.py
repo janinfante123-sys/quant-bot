@@ -29,7 +29,14 @@ def run(state):
 
                 print(f"{symbol} → {price} → {signal}")
 
-                # ===== EJECUCIÓN =====
+                # =====================================
+                # CHECK SL / TP AUTOMÁTICO
+                # =====================================
+                state.check_positions(symbol, price)
+
+                # =====================================
+                # EJECUCIÓN DE SEÑAL
+                # =====================================
                 if signal == "BUY":
                     state.open_position(symbol, price)
 
@@ -39,7 +46,7 @@ def run(state):
             except Exception as e:
                 print(f"❌ ERROR {symbol}: {e}")
 
-        print(f"Balance: {state.balance}")
+        print(f"Balance: {round(state.balance, 2)}")
 
         duration = round(time.time() - start, 2)
         print(f"⏱ {duration}s")
