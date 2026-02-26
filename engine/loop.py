@@ -1,56 +1,78 @@
 import time
 from datetime import datetime
-from config import SYMBOLS, LOOP_INTERVAL, RISK_PER_TRADE
-from engine.data_feed import get_price
-from engine.strategy import generate_signal
-from engine.risk import position_size
-from engine.executor import open_trade, check_closures
 
-def run(state):
-    print("🟢 BOT LOOP STARTED", flush=True)
+from config import SYMBOLS, LOOP_INTERVAL, START_BALANCE, RISK_PER_TRADE
+from engine.data_feed import get_data
+
+
+balance = START_BALANCE
+positions = {}
+
+
+def simple_signal(df):
+    """
+    Señal básica:
+    - Compra si cierre actual > media 20
+    - Vende si cierre actual < media 20
+    """
+    close = df["Close"]
+    ma20 = close.rolling(20).mean()
+
+    if len(ma20) < 21:
+        return "HOLD"
+
+    if close.iloc[-1] > ma20.iloc[-1]:
+        return "BUY"
+    elif close.iloc[-1] < ma20.iloc[-1]:
+        return "SELL"
+    else:
+        return "HOLD"
+
+
+def run():
+    global balance
+    global positions
+
+    print("🟢 BOT LOOP STARTED")
 
     while True:
-        start = time.time()
+        start_time = time.time()
+        print(f"\n🔁 NEW CYCLE {datetime.now().strftime('%H:%M:%S')}")
 
-        try:
-            now = datetime.utcnow().strftime("%H:%M:%S")
-            print(f"\n🔁 NEW CYCLE {now}", flush=True)
+        for symbol in SYMBOLS:
+            try:
+                df = get_data(symbol)
+                price = float(df["Close"].iloc[-1])
+                signal = simple_signal(df)
 
-            price_map = {}
+                print(f"{symbol} → {price} → {signal}")
 
-            for market, symbol in SYMBOLS:
-                df, price = get_price(market, symbol)
-                price_map[symbol] = price
+                # Abrir posición
+                if signal == "BUY" and symbol not in positions:
+                    size = balance * RISK_PER_TRADE
+                    positions[symbol] = {
+                        "entry": price,
+                        "size": size
+                    }
+                    balance -= size
+                    print(f"OPEN {symbol}")
 
-                signal = generate_signal(df)
+                # Cerrar posición
+                elif signal == "SELL" and symbol in positions:
+                    entry = positions[symbol]["entry"]
+                    size = positions[symbol]["size"]
+                    pnl = size * (price / entry)
+                    balance += pnl
+                    del positions[symbol]
+                    print(f"CLOSE {symbol}")
 
-                print(f"{symbol} → {price} → {signal}", flush=True)
+            except Exception as e:
+                print(f"❌ ERROR {symbol}: {e}")
 
-                if signal != "HOLD" and len(state.open_trades) < 3:
-                    atr = (df["High"] - df["Low"]).rolling(14).mean().iloc[-1]
+        print(f"Balance: {round(balance, 2)}")
 
-                    if signal == "BUY":
-                        sl = price - atr
-                        tp = price + atr*2
-                    else:
-                        sl = price + atr
-                        tp = price - atr*2
+        duration = round(time.time() - start_time, 2)
+        print(f"⏱ {duration}s")
+        print("⏳ sleeping...\n")
 
-                    size = position_size(state.balance, RISK_PER_TRADE, price, sl)
-
-                    open_trade(state, symbol, signal, price, sl, tp, size)
-
-            check_closures(state, price_map)
-
-            print(f"Balance: {round(state.balance,2)}", flush=True)
-
-            duration = round(time.time() - start, 2)
-            print(f"⏱ {duration}s", flush=True)
-            print("⏳ sleeping...\n", flush=True)
-
-            state.save()
-            time.sleep(LOOP_INTERVAL)
-
-        except Exception as e:
-            print("❌ LOOP ERROR:", e, flush=True)
-            time.sleep(5)
+        time.sleep(LOOP_INTERVAL)
