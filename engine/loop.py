@@ -3,35 +3,46 @@ from datetime import datetime
 
 from engine.data_feed import get_price
 from engine.strategy import get_signal
-from engine.state import BotState
 
-SYMBOLS = ["BTC-USD", "ETH-USD", "SOL-USD", "AAPL"]
-SLEEP = 900  # 15 minutos
 
-def run():
-    state = BotState()
+SYMBOLS = [
+    "BTC-USD",
+    "ETH-USD",
+    "SOL-USD",
+    "AAPL"
+]
 
-    print("🚀 WORKER STARTED")
+LOOP_INTERVAL = 3600  # 1 hora
+
+
+def run(state):
     print("🟢 BOT LOOP STARTED")
 
     while True:
         start = time.time()
-        print(f"\n🔁 NEW CYCLE {datetime.now().strftime('%H:%M:%S')}")
+        print(f"\n🔁 NEW CYCLE {datetime.utcnow().strftime('%H:%M:%S')}")
 
         for symbol in SYMBOLS:
             try:
-                price, df = get_price(symbol)
-                signal = get_signal(df)
+                df, price = get_price(symbol, interval="1h")
+                signal = str(get_signal(df))
 
                 print(f"{symbol} → {price} → {signal}")
 
-                state.process_signal(symbol, signal, price)
+                # ===== EJECUCIÓN =====
+                if signal == "BUY":
+                    state.open_position(symbol, price)
+
+                elif signal == "SELL":
+                    state.close_position(symbol, price)
 
             except Exception as e:
                 print(f"❌ ERROR {symbol}: {e}")
 
-        print(f"Balance: {round(state.balance,2)}")
-        print(f"⏱ {round(time.time()-start,2)}s")
-        print("⏳ sleeping...\n")
+        print(f"Balance: {state.balance}")
 
-        time.sleep(SLEEP)
+        duration = round(time.time() - start, 2)
+        print(f"⏱ {duration}s")
+        print("⏳ sleeping...")
+
+        time.sleep(LOOP_INTERVAL)
