@@ -6,7 +6,7 @@ from engine.strategy import get_signal
 from engine.state import BotState
 
 SYMBOLS = ["BTC-USD", "ETH-USD", "SOL-USD", "AAPL"]
-SLEEP = 3600  # 1h
+SLEEP = 900  # 15 minutos
 
 def run():
     state = BotState()
@@ -30,7 +30,7 @@ def run():
             except Exception as e:
                 print(f"❌ ERROR {symbol}: {e}")
 
-        print(f"Balance: {state.balance}")
+        print(f"Balance: {round(state.balance,2)}")
         print(f"⏱ {round(time.time()-start,2)}s")
         print("⏳ sleeping...\n")
 
