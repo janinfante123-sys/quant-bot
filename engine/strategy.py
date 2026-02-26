@@ -1,28 +1,31 @@
 import pandas as pd
 
 def get_signal(df):
-    """
-    Estrategia simple:
-    - BUY si cierre > MA20
-    - SELL si cierre < MA20
-    - HOLD en otro caso
-    """
+    try:
+        if df is None or df.empty:
+            return "HOLD"
 
-    if df is None or len(df) < 21:
-        return "HOLD"
+        close = df["Close"]
 
-    close = df["Close"]
-    ma20 = close.rolling(20).mean()
+        if len(close) < 30:
+            return "HOLD"
 
-    last_close = close.iloc[-1]
-    last_ma = ma20.iloc[-1]
+        sma_fast = close.rolling(5).mean()
+        sma_slow = close.rolling(20).mean()
 
-    if pd.isna(last_ma):
-        return "HOLD"
+        fast = float(sma_fast.iloc[-1])
+        slow = float(sma_slow.iloc[-1])
 
-    if last_close > last_ma:
-        return "BUY"
-    elif last_close < last_ma:
-        return "SELL"
-    else:
+        if pd.isna(fast) or pd.isna(slow):
+            return "HOLD"
+
+        if fast > slow:
+            return "BUY"
+        elif fast < slow:
+            return "SELL"
+        else:
+            return "HOLD"
+
+    except Exception as e:
+        print("⚠️ STRATEGY ERROR:", e)
         return "HOLD"
