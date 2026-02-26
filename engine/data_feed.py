@@ -1,11 +1,17 @@
 import yfinance as yf
+from config import DATA_INTERVAL, DATA_LOOKBACK
 
-def get_price(market, symbol):
-    ticker = yf.Ticker(symbol)
-    df = ticker.history(period="3d", interval="15m")
 
-    if df.empty:
-        raise Exception("No data received")
+def get_data(symbol):
+    df = yf.download(
+        symbol,
+        period=DATA_LOOKBACK,
+        interval=DATA_INTERVAL,
+        progress=False,
+        auto_adjust=True
+    )
 
-    price = df["Close"].iloc[-1]
-    return df, price
+    if df is None or len(df) == 0:
+        raise Exception(f"No data received for {symbol}")
+
+    return df
