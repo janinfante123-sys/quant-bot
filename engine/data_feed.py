@@ -1,19 +1,16 @@
 import yfinance as yf
 
-def get_price(symbol):
+def get_price(symbol, interval="1h"):
     df = yf.download(
         symbol,
         period="7d",
-        interval="1h",
+        interval=interval,
         progress=False
     )
 
-    if df is None or len(df) == 0:
-        raise Exception("No data")
+    if df is None or df.empty:
+        raise Exception("No data received")
 
-    price = df["Close"].iloc[-1]
+    price = float(df["Close"].iloc[-1])
 
-    if hasattr(price, "iloc"):
-        price = price.iloc[-1]
-
-    return float(price), df
+    return df, price
