@@ -1,13 +1,28 @@
-def generate_signal(df):
-    df = df.copy()
+import pandas as pd
 
-    df["ema20"] = df["Close"].ewm(span=20).mean()
-    df["ema50"] = df["Close"].ewm(span=50).mean()
+def get_signal(df):
+    """
+    Estrategia simple:
+    - BUY si cierre > MA20
+    - SELL si cierre < MA20
+    - HOLD en otro caso
+    """
 
-    if df["ema20"].iloc[-2] < df["ema50"].iloc[-2] and df["ema20"].iloc[-1] > df["ema50"].iloc[-1]:
+    if df is None or len(df) < 21:
+        return "HOLD"
+
+    close = df["Close"]
+    ma20 = close.rolling(20).mean()
+
+    last_close = close.iloc[-1]
+    last_ma = ma20.iloc[-1]
+
+    if pd.isna(last_ma):
+        return "HOLD"
+
+    if last_close > last_ma:
         return "BUY"
-
-    if df["ema20"].iloc[-2] > df["ema50"].iloc[-2] and df["ema20"].iloc[-1] < df["ema50"].iloc[-1]:
+    elif last_close < last_ma:
         return "SELL"
-
-    return "HOLD"
+    else:
+        return "HOLD"
