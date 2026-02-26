@@ -2,7 +2,7 @@ import yfinance as yf
 
 def get_price(market, symbol):
     ticker = yf.Ticker(symbol)
-    df = ticker.history(period="3d", interval="1h")
+    df = ticker.history(period="3d", interval="15m")
 
     if df.empty:
         raise Exception("No data received")
