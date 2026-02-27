@@ -1,12 +1,41 @@
+import json
+import os
+
+
 class BotState:
+
+    FILE = "bot_state.json"
 
     def __init__(self):
         self.balance = 1000
         self.positions = {}
 
+        self._load()
+
     # ======================================
-    # CALCULAR TAMAÑO CON RIESGO 1%
+    # PERSISTENCIA
     # ======================================
+
+    def _save(self):
+        data = {
+            "balance": self.balance,
+            "positions": self.positions
+        }
+        with open(self.FILE, "w") as f:
+            json.dump(data, f)
+
+    def _load(self):
+        if os.path.exists(self.FILE):
+            with open(self.FILE, "r") as f:
+                data = json.load(f)
+                self.balance = data.get("balance", 1000)
+                self.positions = data.get("positions", {})
+                print("🔄 STATE RESTORED")
+
+    # ======================================
+    # RIESGO 1%
+    # ======================================
+
     def _calc_size(self, entry, sl):
         risk_amount = self.balance * 0.01
         risk_per_unit = abs(entry - sl)
@@ -14,18 +43,17 @@ class BotState:
         if risk_per_unit == 0:
             return 0
 
-        size = risk_amount / risk_per_unit
-        return size
+        return risk_amount / risk_per_unit
 
     # ======================================
-    # ABRIR POSICIÓN
+    # ABRIR
     # ======================================
+
     def open_position(self, symbol, price):
 
         if symbol in self.positions:
             return
 
-        # SL 1%
         sl = price * 0.99
         tp = price * 1.02
 
@@ -41,11 +69,14 @@ class BotState:
             "tp": tp
         }
 
+        self._save()
+
         print(f"OPEN {symbol} @ {price} SL:{sl} TP:{tp}")
 
     # ======================================
-    # CERRAR MANUAL (por señal contraria)
+    # CERRAR MANUAL
     # ======================================
+
     def close_position(self, symbol, price):
 
         if symbol not in self.positions:
@@ -60,11 +91,14 @@ class BotState:
 
         del self.positions[symbol]
 
+        self._save()
+
         print(f"CLOSE {symbol} @ {price} PnL:{pnl}")
 
     # ======================================
-    # CHECK SL/TP AUTOMÁTICO
+    # SL / TP AUTOMÁTICO
     # ======================================
+
     def check_positions(self, symbol, price):
 
         if symbol not in self.positions:
@@ -77,6 +111,7 @@ class BotState:
             self.balance += pnl
             print(f"STOP LOSS {symbol} PnL:{pnl}")
             del self.positions[symbol]
+            self._save()
             return
 
         if price >= pos["tp"]:
@@ -84,4 +119,5 @@ class BotState:
             self.balance += pnl
             print(f"TAKE PROFIT {symbol} PnL:{pnl}")
             del self.positions[symbol]
+            self._save()
             return
