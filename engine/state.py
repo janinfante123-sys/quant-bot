@@ -5,16 +5,16 @@ import os
 class BotState:
 
     FILE = "bot_state.json"
+    MAX_POSITIONS = 2
 
     def __init__(self):
         self.balance = 1000
         self.positions = {}
-
         self._load()
 
-    # ======================================
+    # ==========================
     # PERSISTENCIA
-    # ======================================
+    # ==========================
 
     def _save(self):
         data = {
@@ -32,9 +32,9 @@ class BotState:
                 self.positions = data.get("positions", {})
                 print("🔄 STATE RESTORED")
 
-    # ======================================
+    # ==========================
     # RIESGO 1%
-    # ======================================
+    # ==========================
 
     def _calc_size(self, entry, sl):
         risk_amount = self.balance * 0.01
@@ -45,13 +45,18 @@ class BotState:
 
         return risk_amount / risk_per_unit
 
-    # ======================================
-    # ABRIR
-    # ======================================
+    # ==========================
+    # ABRIR POSICIÓN
+    # ==========================
 
     def open_position(self, symbol, price):
 
         if symbol in self.positions:
+            return
+
+        # 🔒 LÍMITE DE POSICIONES
+        if len(self.positions) >= self.MAX_POSITIONS:
+            print("⚠️ MAX POSITIONS REACHED")
             return
 
         sl = price * 0.99
@@ -73,9 +78,9 @@ class BotState:
 
         print(f"OPEN {symbol} @ {price} SL:{sl} TP:{tp}")
 
-    # ======================================
+    # ==========================
     # CERRAR MANUAL
-    # ======================================
+    # ==========================
 
     def close_position(self, symbol, price):
 
@@ -95,9 +100,9 @@ class BotState:
 
         print(f"CLOSE {symbol} @ {price} PnL:{pnl}")
 
-    # ======================================
+    # ==========================
     # SL / TP AUTOMÁTICO
-    # ======================================
+    # ==========================
 
     def check_positions(self, symbol, price):
 
