@@ -89,7 +89,7 @@ class BotState:
         entry = pos["entry"]
         size = pos["size"]
 
-        pnl = size * ((price - entry) / entry)
+        pnl = size * (price - entry)
         self.balance += pnl
 
         # Registrar trade en métricas
