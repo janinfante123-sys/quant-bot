@@ -1,5 +1,6 @@
 import json
 import os
+from engine.metrics import Metrics
 
 
 class BotState:
@@ -10,6 +11,7 @@ class BotState:
     def __init__(self):
         self.balance = 1000
         self.positions = {}
+        self.metrics = Metrics()
         self._load()
 
     # ==========================
@@ -54,7 +56,6 @@ class BotState:
         if symbol in self.positions:
             return
 
-        # 🔒 LÍMITE DE POSICIONES
         if len(self.positions) >= self.MAX_POSITIONS:
             print("⚠️ MAX POSITIONS REACHED")
             return
@@ -79,13 +80,10 @@ class BotState:
         print(f"OPEN {symbol} @ {price} SL:{sl} TP:{tp}")
 
     # ==========================
-    # CERRAR MANUAL
+    # CIERRE GENERAL (centralizado)
     # ==========================
 
-    def close_position(self, symbol, price):
-
-        if symbol not in self.positions:
-            return
+    def _close_and_record(self, symbol, price):
 
         pos = self.positions[symbol]
         entry = pos["entry"]
@@ -94,11 +92,30 @@ class BotState:
         pnl = size * ((price - entry) / entry)
         self.balance += pnl
 
-        del self.positions[symbol]
+        # Registrar trade en métricas
+        self.metrics.record_trade(
+            symbol=symbol,
+            entry=entry,
+            exit_price=price,
+            size=size,
+            pnl=pnl
+        )
 
+        del self.positions[symbol]
         self._save()
 
         print(f"CLOSE {symbol} @ {price} PnL:{pnl}")
+
+    # ==========================
+    # CERRAR MANUAL
+    # ==========================
+
+    def close_position(self, symbol, price):
+
+        if symbol not in self.positions:
+            return
+
+        self._close_and_record(symbol, price)
 
     # ==========================
     # SL / TP AUTOMÁTICO
@@ -112,17 +129,11 @@ class BotState:
         pos = self.positions[symbol]
 
         if price <= pos["sl"]:
-            pnl = pos["size"] * ((price - pos["entry"]) / pos["entry"])
-            self.balance += pnl
-            print(f"STOP LOSS {symbol} PnL:{pnl}")
-            del self.positions[symbol]
-            self._save()
+            print(f"STOP LOSS {symbol}")
+            self._close_and_record(symbol, price)
             return
 
         if price >= pos["tp"]:
-            pnl = pos["size"] * ((price - pos["entry"]) / pos["entry"])
-            self.balance += pnl
-            print(f"TAKE PROFIT {symbol} PnL:{pnl}")
-            del self.positions[symbol]
-            self._save()
+            print(f"TAKE PROFIT {symbol}")
+            self._close_and_record(symbol, price)
             return
