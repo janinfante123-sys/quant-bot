@@ -51,7 +51,7 @@ class BotState:
     # ABRIR POSICIÓN
     # ==========================
 
-    def open_position(self, symbol, price, side="BUY"):
+    def open_position(self, symbol, price, df, side="BUY"):
 
         if symbol in self.positions:
             return
@@ -60,12 +60,21 @@ class BotState:
             print("⚠️ MAX POSITIONS REACHED")
             return
 
+        # ==========================
+        # ATR STOP LOSS
+        # ==========================
+
+        atr = df["ATR"].iloc[-1]
+
+        if atr == 0 or atr is None:
+            return
+
         if side == "BUY":
-            sl = price * 0.99
-            tp = price * 1.02
+            sl = price - (2 * atr)
+            tp = price + (4 * atr)
         else:
-            sl = price * 1.01
-            tp = price * 0.98
+            sl = price + (2 * atr)
+            tp = price - (4 * atr)
 
         size = self._calc_size(price, sl)
 
