@@ -51,7 +51,7 @@ class BotState:
     # ABRIR POSICIÓN
     # ==========================
 
-    def open_position(self, symbol, price):
+    def open_position(self, symbol, price, side="BUY"):
 
         if symbol in self.positions:
             return
@@ -60,8 +60,12 @@ class BotState:
             print("⚠️ MAX POSITIONS REACHED")
             return
 
-        sl = price * 0.99
-        tp = price * 1.02
+        if side == "BUY":
+            sl = price * 0.99
+            tp = price * 1.02
+        else:
+            sl = price * 1.01
+            tp = price * 0.98
 
         size = self._calc_size(price, sl)
 
@@ -72,15 +76,16 @@ class BotState:
             "entry": price,
             "size": size,
             "sl": sl,
-            "tp": tp
+            "tp": tp,
+            "side": side
         }
 
         self._save()
 
-        print(f"OPEN {symbol} @ {price} SL:{sl} TP:{tp}")
+        print(f"OPEN {side} {symbol} @ {price} SL:{sl} TP:{tp}")
 
     # ==========================
-    # CIERRE GENERAL (centralizado)
+    # CIERRE GENERAL
     # ==========================
 
     def _close_and_record(self, symbol, price):
@@ -88,11 +93,15 @@ class BotState:
         pos = self.positions[symbol]
         entry = pos["entry"]
         size = pos["size"]
+        side = pos.get("side", "BUY")
 
-        pnl = size * (price - entry)
+        if side == "BUY":
+            pnl = size * (price - entry)
+        else:
+            pnl = size * (entry - price)
+
         self.balance += pnl
 
-        # Registrar trade en métricas
         self.metrics.record_trade(
             symbol=symbol,
             entry=entry,
@@ -127,13 +136,28 @@ class BotState:
             return
 
         pos = self.positions[symbol]
+        side = pos.get("side", "BUY")
 
-        if price <= pos["sl"]:
-            print(f"STOP LOSS {symbol}")
-            self._close_and_record(symbol, price)
-            return
+        if side == "BUY":
 
-        if price >= pos["tp"]:
-            print(f"TAKE PROFIT {symbol}")
-            self._close_and_record(symbol, price)
-            return
+            if price <= pos["sl"]:
+                print(f"STOP LOSS {symbol}")
+                self._close_and_record(symbol, price)
+                return
+
+            if price >= pos["tp"]:
+                print(f"TAKE PROFIT {symbol}")
+                self._close_and_record(symbol, price)
+                return
+
+        else:
+
+            if price >= pos["sl"]:
+                print(f"STOP LOSS {symbol}")
+                self._close_and_record(symbol, price)
+                return
+
+            if price <= pos["tp"]:
+                print(f"TAKE PROFIT {symbol}")
+                self._close_and_record(symbol, price)
+                return
