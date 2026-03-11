@@ -37,11 +37,12 @@ def run(state):
                 # =====================================
                 # EJECUCIÓN DE SEÑAL
                 # =====================================
+
                 if signal == "BUY":
-                    state.open_position(symbol, price)
+                    state.open_position(symbol, price, df, side="BUY")
 
                 elif signal == "SELL":
-                    state.close_position(symbol, price)
+                    state.open_position(symbol, price, df, side="SELL")
 
             except Exception as e:
                 print(f"❌ ERROR {symbol}: {e}")
