@@ -17,7 +17,7 @@ def get_signal(df):
         # INDICADORES
         # ======================
 
-        sma = close.rolling(20).mean()
+        sma20 = close.rolling(20).mean()
 
         delta = close.diff()
         gain = delta.clip(lower=0)
@@ -30,22 +30,30 @@ def get_signal(df):
         rsi = 100 - (100 / (1 + rs))
 
         price = float(close.iloc[-1])
-        sma_val = float(sma.iloc[-1])
+        sma = float(sma20.iloc[-1])
         rsi_val = float(rsi.iloc[-1])
 
-        if pd.isna(sma_val) or pd.isna(rsi_val):
+        if pd.isna(sma) or pd.isna(rsi_val):
             return "HOLD"
 
         # ======================
-        # LÓGICA DE TRADING
+        # TREND STRATEGY
         # ======================
 
-        # LONG
-        if price > sma_val and rsi_val < 40:
+        if price > sma and rsi_val < 50:
             return "BUY"
 
-        # SHORT
-        if price < sma_val and rsi_val > 60:
+        if price < sma and rsi_val > 50:
+            return "SELL"
+
+        # ======================
+        # MEAN REVERSION
+        # ======================
+
+        if rsi_val < 30:
+            return "BUY"
+
+        if rsi_val > 70:
             return "SELL"
 
         return "HOLD"
