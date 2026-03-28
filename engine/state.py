@@ -6,7 +6,7 @@ from engine.metrics import Metrics
 class BotState:
 
     FILE = "bot_state.json"
-    MAX_POSITIONS = 2
+    MAX_POSITIONS = 4
 
     def __init__(self):
         self.balance = 1000
