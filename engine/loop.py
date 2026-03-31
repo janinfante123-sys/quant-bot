@@ -22,6 +22,9 @@ def run(state):
         start = time.time()
         print(f"\n🔁 NEW CYCLE {datetime.utcnow().strftime('%H:%M:%S')}")
 
+        # 🔥 actualizar cooldowns
+        state.update_cooldowns()
+
         for symbol in SYMBOLS:
             try:
                 df, price = get_price(symbol, interval="1h")
@@ -29,20 +32,20 @@ def run(state):
 
                 print(f"{symbol} → {price} → {signal}")
 
-                # =====================================
-                # CHECK SL / TP AUTOMÁTICO
-                # =====================================
+                # ==========================
+                # CHECK SL / TP
+                # ==========================
                 state.check_positions(symbol, price)
 
-                # =====================================
+                # ==========================
                 # EJECUCIÓN DE SEÑAL
-                # =====================================
-
+                # ==========================
                 if signal == "BUY":
-                    state.open_position(symbol, price, df, side="BUY")
+                    state.open_position(symbol, price, side="BUY")
 
                 elif signal == "SELL":
-                    state.open_position(symbol, price, df, side="SELL")
+                    # 🔥 ahora SELL abre short (no cierra)
+                    state.open_position(symbol, price, side="SELL")
 
             except Exception as e:
                 print(f"❌ ERROR {symbol}: {e}")
