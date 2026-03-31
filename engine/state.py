@@ -7,10 +7,12 @@ class BotState:
 
     FILE = "bot_state.json"
     MAX_POSITIONS = 4
+    COOLDOWN_CYCLES = 2  # 🔥 nuevo
 
     def __init__(self):
         self.balance = 1000
         self.positions = {}
+        self.cooldowns = {}  # 🔥 nuevo
         self.metrics = Metrics()
         self._load()
 
@@ -21,7 +23,8 @@ class BotState:
     def _save(self):
         data = {
             "balance": self.balance,
-            "positions": self.positions
+            "positions": self.positions,
+            "cooldowns": self.cooldowns  # 🔥 guardar cooldowns
         }
         with open(self.FILE, "w") as f:
             json.dump(data, f)
@@ -32,7 +35,21 @@ class BotState:
                 data = json.load(f)
                 self.balance = data.get("balance", 1000)
                 self.positions = data.get("positions", {})
+                self.cooldowns = data.get("cooldowns", {})
                 print("🔄 STATE RESTORED")
+
+    # ==========================
+    # GESTIÓN COOLDOWN
+    # ==========================
+
+    def update_cooldowns(self):
+        for symbol in list(self.cooldowns.keys()):
+            self.cooldowns[symbol] -= 1
+            if self.cooldowns[symbol] <= 0:
+                del self.cooldowns[symbol]
+
+    def in_cooldown(self, symbol):
+        return symbol in self.cooldowns
 
     # ==========================
     # RIESGO 1%
@@ -51,30 +68,26 @@ class BotState:
     # ABRIR POSICIÓN
     # ==========================
 
-    def open_position(self, symbol, price, df, side="BUY"):
+    def open_position(self, symbol, price, side="BUY"):
 
         if symbol in self.positions:
+            return
+
+        # 🔥 cooldown check
+        if self.in_cooldown(symbol):
+            print(f"⏳ {symbol} in cooldown")
             return
 
         if len(self.positions) >= self.MAX_POSITIONS:
             print("⚠️ MAX POSITIONS REACHED")
             return
 
-        # ==========================
-        # ATR STOP LOSS
-        # ==========================
-
-        atr = df["ATR"].iloc[-1]
-
-        if atr == 0 or atr is None:
-            return
-
         if side == "BUY":
-            sl = price - (2 * atr)
-            tp = price + (4 * atr)
+            sl = price * 0.99
+            tp = price * 1.02
         else:
-            sl = price + (2 * atr)
-            tp = price - (4 * atr)
+            sl = price * 1.01
+            tp = price * 0.98
 
         size = self._calc_size(price, sl)
 
@@ -118,6 +131,9 @@ class BotState:
             size=size,
             pnl=pnl
         )
+
+        # 🔥 activar cooldown
+        self.cooldowns[symbol] = self.COOLDOWN_CYCLES
 
         del self.positions[symbol]
         self._save()
