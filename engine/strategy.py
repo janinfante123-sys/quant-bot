@@ -2,9 +2,7 @@ import pandas as pd
 
 
 def get_signal(df):
-
     try:
-
         if df is None or df.empty:
             return "HOLD"
 
@@ -13,50 +11,35 @@ def get_signal(df):
         if len(close) < 50:
             return "HOLD"
 
-        # ======================
+        # ==========================
         # INDICADORES
-        # ======================
+        # ==========================
 
-        sma20 = close.rolling(20).mean()
+        sma_fast = close.rolling(10).mean()
+        sma_slow = close.rolling(30).mean()
 
-        delta = close.diff()
-        gain = delta.clip(lower=0)
-        loss = -delta.clip(upper=0)
+        momentum = close.pct_change(5)
 
-        avg_gain = gain.rolling(14).mean()
-        avg_loss = loss.rolling(14).mean()
+        fast = sma_fast.iloc[-1]
+        slow = sma_slow.iloc[-1]
+        mom = momentum.iloc[-1]
 
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
-
-        price = float(close.iloc[-1])
-        sma = float(sma20.iloc[-1])
-        rsi_val = float(rsi.iloc[-1])
-
-        if pd.isna(sma) or pd.isna(rsi_val):
+        if pd.isna(fast) or pd.isna(slow) or pd.isna(mom):
             return "HOLD"
 
-        # ======================
-        # TREND STRATEGY
-        # ======================
+        # ==========================
+        # LÓGICA
+        # ==========================
 
-        if price > sma and rsi_val < 50:
+        # Tendencia + momentum
+        if fast > slow and mom > 0:
             return "BUY"
 
-        if price < sma and rsi_val > 50:
+        elif fast < slow and mom < 0:
             return "SELL"
 
-        # ======================
-        # MEAN REVERSION
-        # ======================
-
-        if rsi_val < 30:
-            return "BUY"
-
-        if rsi_val > 70:
-            return "SELL"
-
-        return "HOLD"
+        else:
+            return "HOLD"
 
     except Exception as e:
         print("⚠️ STRATEGY ERROR:", e)
