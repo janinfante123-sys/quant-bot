@@ -1,24 +1,36 @@
+import pandas as pd
 
-from sklearn.ensemble import RandomForestClassifier
-import numpy as np
 
-model = RandomForestClassifier()
-trained=False
+def detect_market_regime(df):
+    try:
+        if df is None or df.empty:
+            return "UNKNOWN"
 
-def train(df):
-    global trained
-    df['returns']=df['close'].pct_change()
-    df=df.dropna()
-    if len(df)<50:
-        return
-    X=df[['returns']]
-    y=(df['returns'].shift(-1)>0).astype(int)
-    model.fit(X[:-1],y[:-1])
-    trained=True
+        close = df["Close"]
 
-def filter_signal(df):
-    if not trained:
-        return True
-    val=np.array([[df['close'].pct_change().iloc[-1]]])
-    pred=model.predict(val)
-    return pred[0]==1
+        if len(close) < 50:
+            return "UNKNOWN"
+
+        # Volatilidad
+        returns = close.pct_change()
+        vol = returns.rolling(20).std().iloc[-1]
+
+        # Tendencia
+        sma_fast = close.rolling(10).mean().iloc[-1]
+        sma_slow = close.rolling(30).mean().iloc[-1]
+
+        # Fuerza tendencia
+        trend_strength = abs(sma_fast - sma_slow) / close.iloc[-1]
+
+        # ==========================
+        # CLASIFICACIÓN
+        # ==========================
+
+        if trend_strength > 0.01 and vol > 0.002:
+            return "TREND"
+
+        return "RANGE"
+
+    except Exception as e:
+        print("⚠️ AI MODULE ERROR:", e)
+        return "UNKNOWN"
