@@ -7,10 +7,16 @@ from engine.ai_module import detect_market_regime
 
 
 SYMBOLS = [
+    # CRYPTO
     "BTC-USD",
     "ETH-USD",
     "SOL-USD",
-    "AAPL"
+
+    # STOCKS
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "SPY"
 ]
 
 LOOP_INTERVAL = 3600
