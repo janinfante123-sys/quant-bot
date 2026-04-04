@@ -8,7 +8,7 @@ def detect_market_regime(df):
 
         close = df["Close"]
 
-        if len(close) < 50:
+        if len(close) < 30:
             return "UNKNOWN"
 
         returns = close.pct_change()
