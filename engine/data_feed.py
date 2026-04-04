@@ -6,7 +6,7 @@ def get_price(symbol, interval="1h"):
 
     df = yf.download(
         symbol,
-        period="7d",
+        period="14d",
         interval=interval,
         progress=False,
         auto_adjust=True
