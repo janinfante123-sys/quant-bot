@@ -3,6 +3,7 @@ from datetime import datetime
 
 from engine.data_feed import get_price
 from engine.strategy import get_signal
+from engine.ai_module import detect_market_regime
 
 
 SYMBOLS = [
@@ -12,7 +13,7 @@ SYMBOLS = [
     "AAPL"
 ]
 
-LOOP_INTERVAL = 3600  # 1 hora
+LOOP_INTERVAL = 3600
 
 
 def run(state):
@@ -22,15 +23,16 @@ def run(state):
         start = time.time()
         print(f"\n🔁 NEW CYCLE {datetime.utcnow().strftime('%H:%M:%S')}")
 
-        # 🔥 actualizar cooldowns
         state.update_cooldowns()
 
         for symbol in SYMBOLS:
             try:
                 df, price = get_price(symbol, interval="1h")
+
+                regime = detect_market_regime(df)
                 signal = str(get_signal(df))
 
-                print(f"{symbol} → {price} → {signal}")
+                print(f"{symbol} → {price} → {signal} → {regime}")
 
                 # ==========================
                 # CHECK SL / TP
@@ -38,13 +40,18 @@ def run(state):
                 state.check_positions(symbol, price)
 
                 # ==========================
-                # EJECUCIÓN DE SEÑAL
+                # FILTRO IA (CLAVE)
+                # ==========================
+                if regime != "TREND":
+                    continue
+
+                # ==========================
+                # EJECUCIÓN
                 # ==========================
                 if signal == "BUY":
                     state.open_position(symbol, price, side="BUY")
 
                 elif signal == "SELL":
-                    # 🔥 ahora SELL abre short (no cierra)
                     state.open_position(symbol, price, side="SELL")
 
             except Exception as e:
