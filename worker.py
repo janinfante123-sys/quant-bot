@@ -3,6 +3,7 @@ from datetime import datetime
 
 from engine.data_feed import get_price
 from engine.strategy import get_signal
+from engine.state import BotState
 
 
 SYMBOLS = [
@@ -15,16 +16,24 @@ SYMBOLS = [
     "SPY"
 ]
 
-LOOP_INTERVAL = 3600  # 1 hora
+LOOP_INTERVAL = 3600
 
 
-# ==========================
-# 🔥 CLASIFICACIÓN DE ACTIVOS
-# ==========================
 def get_asset_type(symbol):
     if "-USD" in symbol:
         return "CRYPTO"
     return "STOCK"
+
+
+def safe_start():
+    try:
+        state = BotState()
+        run(state)
+    except Exception as e:
+        print("💥 FATAL ERROR ON START:", e)
+        import traceback
+        traceback.print_exc()
+        time.sleep(60)
 
 
 def run(state):
@@ -34,6 +43,9 @@ def run(state):
         start = time.time()
         print(f"\n🔁 NEW CYCLE {datetime.utcnow().strftime('%H:%M:%S')}")
 
+        # 🔥 actualizar cooldowns
+        state.update_cooldowns()
+
         for symbol in SYMBOLS:
             try:
                 df, price = get_price(symbol, interval="1h")
@@ -41,33 +53,18 @@ def run(state):
 
                 print(f"{symbol} → {price} → {signal} → {regime}")
 
-                # ==========================
-                # SL / TP AUTOMÁTICO
-                # ==========================
                 state.check_positions(symbol, price)
 
-                # ==========================
-                # 🔥 FILTRO DE CORRELACIÓN
-                # ==========================
                 asset_type = get_asset_type(symbol)
+                open_types = [get_asset_type(s) for s in state.positions.keys()]
 
-                open_types = [
-                    get_asset_type(s)
-                    for s in state.positions.keys()
-                ]
-
-                # ==========================
-                # EJECUCIÓN
-                # ==========================
                 if signal == "BUY":
-
                     if asset_type in open_types:
                         print(f"⛔ SKIP {symbol} (correlated)")
                     else:
                         state.open_position(symbol, price, side="BUY")
 
                 elif signal == "SELL":
-
                     if asset_type in open_types:
                         print(f"⛔ SKIP {symbol} (correlated)")
                     else:
@@ -83,3 +80,8 @@ def run(state):
         print("⏳ sleeping...")
 
         time.sleep(LOOP_INTERVAL)
+
+
+if __name__ == "__main__":
+    print("🚀 WORKER STARTED")
+    safe_start()
