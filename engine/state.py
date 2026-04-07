@@ -7,12 +7,12 @@ class BotState:
 
     FILE = "bot_state.json"
     MAX_POSITIONS = 4
-    COOLDOWN_CYCLES = 2  # 🔥 nuevo
+    COOLDOWN_CYCLES = 2
 
     def __init__(self):
         self.balance = 1000
         self.positions = {}
-        self.cooldowns = {}  # 🔥 nuevo
+        self.cooldowns = {}
         self.metrics = Metrics()
         self._load()
 
@@ -24,7 +24,7 @@ class BotState:
         data = {
             "balance": self.balance,
             "positions": self.positions,
-            "cooldowns": self.cooldowns  # 🔥 guardar cooldowns
+            "cooldowns": self.cooldowns
         }
         with open(self.FILE, "w") as f:
             json.dump(data, f)
@@ -39,7 +39,7 @@ class BotState:
                 print("🔄 STATE RESTORED")
 
     # ==========================
-    # GESTIÓN COOLDOWN
+    # COOLDOWN
     # ==========================
 
     def update_cooldowns(self):
@@ -65,15 +65,14 @@ class BotState:
         return risk_amount / risk_per_unit
 
     # ==========================
-    # ABRIR POSICIÓN
+    # ABRIR POSICIÓN (ATR)
     # ==========================
 
-    def open_position(self, symbol, price, side="BUY"):
+    def open_position(self, symbol, price, side="BUY", atr=0):
 
         if symbol in self.positions:
             return
 
-        # 🔥 cooldown check
         if self.in_cooldown(symbol):
             print(f"⏳ {symbol} in cooldown")
             return
@@ -82,12 +81,17 @@ class BotState:
             print("⚠️ MAX POSITIONS REACHED")
             return
 
+        # 🔥 fallback si no hay ATR
+        if atr is None or atr == 0:
+            atr = price * 0.005  # 0.5% fallback
+
+        # 🔥 SL/TP dinámico con ATR
         if side == "BUY":
-            sl = price * 0.99
-            tp = price * 1.02
+            sl = price - (atr * 2)
+            tp = price + (atr * 4)
         else:
-            sl = price * 1.01
-            tp = price * 0.98
+            sl = price + (atr * 2)
+            tp = price - (atr * 4)
 
         size = self._calc_size(price, sl)
 
@@ -107,7 +111,7 @@ class BotState:
         print(f"OPEN {side} {symbol} @ {price} SL:{sl} TP:{tp}")
 
     # ==========================
-    # CIERRE GENERAL
+    # CIERRE
     # ==========================
 
     def _close_and_record(self, symbol, price):
@@ -132,7 +136,6 @@ class BotState:
             pnl=pnl
         )
 
-        # 🔥 activar cooldown
         self.cooldowns[symbol] = self.COOLDOWN_CYCLES
 
         del self.positions[symbol]
@@ -141,7 +144,7 @@ class BotState:
         print(f"CLOSE {symbol} @ {price} PnL:{pnl}")
 
     # ==========================
-    # CERRAR MANUAL
+    # CIERRE MANUAL
     # ==========================
 
     def close_position(self, symbol, price):
@@ -152,7 +155,7 @@ class BotState:
         self._close_and_record(symbol, price)
 
     # ==========================
-    # SL / TP AUTOMÁTICO
+    # SL / TP
     # ==========================
 
     def check_positions(self, symbol, price):
